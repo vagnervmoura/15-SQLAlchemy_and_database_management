@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+
+    {% for message in get_flashed_messages() %}
+        <p>{{ message }}</p>
+        <hr>
+    {% endfor %}
+
+
+    <div style="text-align: center" class="col col-6 container-fluid">
+        {% if stock %}
+            <table style="text-align: center" class="table table-dark table-striped table-borderless table-sm">
+                <thead>
+                    <tr>
+                        <th>PRODUCT</th>
+                        <th>PRICE</th>
+                        <th>STOCK</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in stock %}
+                        <tr>
+                            <td>{{ product.capitalize() }}</td>
+                            <td>{{ stock[product]['v_price'] }}</td>
+                            <td>{{ stock[product]['v_quantity'] }}</td>
+                            <td>
+                                <form method="POST" action="/sale/">
+                                    <table>
+                                        <tr>
+                                            <th>
+                                                <input type="hidden" name="s_name" value="{{ product }}" id="">
+                                                <input type="number" name="s_quantity" class="form-control" id=v_quantity value="v_quantity" min="1" id="sale_id" width="50" required="required">
+                                            </th>
+                                            <th>
+                                                <input type="submit" value="Sell it!" class="abrir">
+                                            </th>
+<!--                                            <th>-->
+<!--                                                <form method="POST" action="{{ url_for('purchase') }}">-->
+<!--                                                    <input type="hidden" name="s-name" value="{{ product }}" id="">-->
+<!--                                                    <input type="submit" value="Delete!">-->
+<!--                                                </form>-->
+<!--                                            </th>-->
+                                        </tr>
+                                    </table>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>There are no products in our Warehouse yet.</p>
+        {% endif %}
+    </div>
+
+
+{% endblock %}

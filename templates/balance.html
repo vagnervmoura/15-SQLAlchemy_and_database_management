@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+
+    <div class="row mt-3">
+        <div class="col col-6 container-fluid">
+            <form action="/balance/", method="POST">
+                <div class="mb-3">
+                    <label for="balance" class="form-label">Insert the amount:</label>
+                    <input id="v_value" name="v_value" type="number" step="0.01" min="0" class="form-control" required="required">
+                </div>
+                <button id="btn_Lodgement" name="v_action" value="1" type="submit" class="custom-button">Lodgement</button>
+                <button id="btn_Withdraw" name="v_action" value="2" type="submit" class="custom-button">Withdraw</button>
+            </form>
+        </div>
+    </div>
+
+
+{% endblock %}

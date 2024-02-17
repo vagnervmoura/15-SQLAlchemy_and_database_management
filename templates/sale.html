@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+
+    <div class="row mt-3">
+        <div class="col col-6 container-fluid">
+            <form action="" action="get">
+                <div class="mb-3"><br><br>
+                    <label for="productName" class="form-label">Product name:</label>
+                    <select id="s_name" name="s_name" class="form-select" aria-label="Default select example" required="required">
+                            <option selected>Open this select menu</option>
+                            <option value="Book">Book</option>
+                            <option value="Pen">Pen</option>
+                            <option value="Pencil">Pencil</option>
+                            <option value="Glue">Glue</option>
+                            <option value="Notepad">Notepad</option>
+                        </select>
+                </div>
+                <div class="mb-3">
+                    <label for="productQuantity" class="form-label">Quantity:</label>
+                    <input type="number" class="form-control" id="v_quantity" width="48" min="1" required="required">
+                </div>
+                <div class="mb-3">
+                    <label for="productPrice" class="form-label" active="false">Price:</label>
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">€</span>
+                        <p type="text" class="form-control" aria-label="Amount (to the nearest Euro)" id="v_price" required="required">
+                        <span class="input-group-text">.00</span>
+                    </div>
+                </div>
+                <button type="submit" class="custom-button">Submit</button>
+            </form>
+        </div>
+    </div>
+
+{% endblock %}

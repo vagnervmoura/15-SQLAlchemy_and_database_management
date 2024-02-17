@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+
+    <div class="mb-3">
+        <div class="col col-6 container-fluid">
+            <form action="/history/", method="POST">
+                <table class="table table-dark table-sm">
+                    <thead>
+                        <tr>
+                            <th>Start Date:</th>
+                            <th>End Date:</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><input id="line_from" name="line_from" type="date" class="form-control"></td>
+                            <td><input id="line_to" name="line_to" type="date" class="form-control"></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <button id="filterButton" class="custom-button" type="submit">Filter</button>
+            </form>
+
+            {% if new_history %}
+                <table class="table table-dark table-sm" style="text-align: center">
+                    <thead>
+                        <tr style="text-align: center">
+                            <th>DATE</th>
+                            <th  style="text-align: left">USER</th>
+                            <th>ACTION</th>
+                            <th>VALUE</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for i in range(new_history['date_transaction']|length) %}
+                            <tr>
+                                <td>{{ new_history['date_transaction'][i] }}</td>
+                                <td  style="text-align: left">{{ new_history['user'][i] }}</td>
+                                <td style="text-align: left">{{ new_history['transaction'][i] }}</td>
+                                <td>{{ new_history['v_value'][i] }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>There are no history yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('filterButton').addEventListener('click', function() {
+            var startDate = document.getElementById('startDate').value;
+            var endDate = document.getElementById('endDate').value;
+
+            // Construct the URL with the date parameters
+            var url = '/history/';
+
+            if (startDate && endDate) {
+                url += startDate + '/' + endDate;
+            } else if (startDate) {
+                url += startDate;
+            } else if (endDate) {
+                url += '/0/' + endDate;
+            }
+
+            // Send AJAX request to Flask server
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    document.getElementById("historyTableContainer").innerHTML = this.responseText;
+                }
+            };
+            xhttp.open("GET", url, true);
+            xhttp.send();
+        });
+    </script>
+
+
+{% endblock %}
