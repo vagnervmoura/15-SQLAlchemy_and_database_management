@@ -22,7 +22,7 @@ class Manager:
             self.review_file = config_obj.review_file
         else:
             # Set default file paths if config_obj is not provided
-            self.balance_file = "balance.txt"
+            self.balance_file = "db_balance.sqlite"
             self.warehouse_file = "warehouse.txt"
             self.review_file = "review.txt"
 

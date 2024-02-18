@@ -2,13 +2,6 @@
 
 {% block content %}
 
-
-    {% for message in get_flashed_messages() %}
-        <p>{{ message }}</p>
-        <hr>
-    {% endfor %}
-
-
     <div style="text-align: center" class="col col-6 container-fluid">
         {% if stock %}
             <table style="text-align: center" class="table table-dark table-striped table-borderless table-sm">
@@ -21,11 +14,11 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for product in stock %}
+                    {% for idx in range(stock['idx']|length) %}
                         <tr>
-                            <td>{{ product.capitalize() }}</td>
-                            <td>{{ stock[product]['v_price'] }}</td>
-                            <td>{{ stock[product]['v_quantity'] }}</td>
+                            <td>{{ stock.product_name[idx] }}</td>
+                            <td>{{ stock.product_price[idx] }}</td>
+                            <td>{{ stock.product_quantity[idx] }}</td>
                             <td>
                                 <form method="POST" action="/sale/">
                                     <table>
@@ -37,12 +30,6 @@
                                             <th>
                                                 <input type="submit" value="Sell it!" class="abrir">
                                             </th>
-<!--                                            <th>-->
-<!--                                                <form method="POST" action="{{ url_for('purchase') }}">-->
-<!--                                                    <input type="hidden" name="s-name" value="{{ product }}" id="">-->
-<!--                                                    <input type="submit" value="Delete!">-->
-<!--                                                </form>-->
-<!--                                            </th>-->
                                         </tr>
                                     </table>
                                 </form>

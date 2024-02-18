@@ -1,5 +1,6 @@
 class Config:
-    balance_file = "balance.txt"
+    # balance_file = "balance.txt"
+    balance_file = "db_balance.sqlite"
     warehouse_file = "warehouse.txt"
     review_file = "review.txt"
 

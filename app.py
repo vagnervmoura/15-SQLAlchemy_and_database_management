@@ -14,6 +14,7 @@ from flask import redirect
 from flask import url_for
 from flask import flash
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from flask_alembic import Alembic
 from manager import Manager
 from config import Config
@@ -21,7 +22,7 @@ from datetime import datetime
 import os as system
 
 
-db = Manager
+# db = Manager
 warehouse = Manager(name="warehouse_file")
 
 config_obj = Config()
@@ -34,16 +35,71 @@ new_data = {}
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "mySecretKey"
+
+
+# CREATING NEW DBs:
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///db.sqlite"
+
+# class Base(DeclarativeBase):
+#   pass
+#
+# db_balance = SQLAlchemy(app, model_class=Base)
+#db.init_app(app)
+
+
+db = SQLAlchemy()
+db.init_app(app)
+
+
+alembic = Alembic()
+alembic.init_app(app, db)
+
+
+class Balance(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    balance = db.Column(db.Float(127), nullable=False)
+
+
+class Warehoue(db.Model):
+    product_id = db.Column(db.Integer, primary_key=True)
+    product_name = db.Column(db.String, nullable=False)
+    product_price = db.Column(db.Float, nullable=False)
+    product_quantity = db.Column(db.Integer, nullable=False)
+
+
 @app.route("/")
 def index():
     data = manager.load_data()
-    stock = data["v_warehouse"]
-    balance = data["v_balance"]
+    balance = db.session.query(Balance).all()
+    products = db.session.query(Warehoue).all()
+    stock = {"idx": [], "product_name": [], "product_price": [], "product_quantity": []}
+    idx = 0
+
+    for product in products:
+        product_name = products[idx].product_name
+        product_price = products[idx].product_price
+        product_quantity = products[idx].product_quantity
+
+        stock['idx'].append(idx)
+        stock['product_name'].append(product_name)
+        stock['product_price'].append(product_price)
+        stock['product_quantity'].append(product_quantity)
+        idx += 1
+
+
+    # with app.app_context():
+    #     balance = db_balance.create_all()
+    #
+    # db_balance.session.add(DB_Balance(v_balance=1))
+    # db.session.commit()
+
+    # actual_balance = db_balance.session.execute(db_balance.select(DB_Balance)).scalars()
+    # print(f"++++++++++++++++++++++BALANCE: {DB_Balance.query}")
 
     # Get the Username logged on system.
     user = system.getlogin()
 
-    return render_template("index.html", title="Current stock level:", stock=stock, balance=balance, user=user)
+    return render_template("index.html", title="Current stock level:", stock=stock, balance=balance, user=user) #, actual_balance=actual_balance)
 
 
 @app.route("/purchase/", methods=["POST", "GET"])
