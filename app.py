@@ -160,31 +160,82 @@ def sale():
     user = system.getlogin()
     success = False
     data = manager.load_data()
-    balance = data["v_balance"]
+    # balance = data["v_balance"]
+    balance = load_balance()
+    warehouse = db.session.query(Warehoue).all()
+    print(f"WAREHOUSE: {warehouse}")
     stock = data["v_warehouse"]
+
     if request.method == "POST":
+        print(request.form["s_name"])
+
         if request.form.get("s_name"):
+            print("INTO IF")
             new_sale = {
                 "user": user,
-                "s_name": request.form["s_name"],
-                "s_quantity": request.form["s_quantity"]
+                "product_name": request.form["s_name"],
+                "product_quantity": request.form["s_quantity"]
             }
-            if int(new_sale["s_quantity"]) > stock[new_sale["s_name"]]["v_quantity"]:
-                print(f"WARNING: Not enough {new_sale['s_name']} to sell.\n")
-                message = f"WARNING: Not enough '{new_sale['s_name']}' to sell.\n"
-                return render_template("message.html", message=message, balance=balance, user=user)
+            print(new_sale["product_name"])
+
+            idx = 0
+            stock = {"idx": [], "product_name": [], "product_price": [], "product_quantity": []}
+            for product in warehouse:
+                product_name = warehouse[idx].product_name
+                product_price = warehouse[idx].product_price
+                product_quantity = warehouse[idx].product_quantity
+
+                stock['idx'].append(idx)
+                stock['product_name'].append(product_name)
+                stock['product_price'].append(product_price)
+                stock['product_quantity'].append(product_quantity)
+                idx += 1
+
+            if new_sale["product_name"] in stock['product_name']:
+                idx = stock['product_name'].index(new_sale["product_name"])
+                stock_quantity = warehouse[idx].product_quantity
+                print(f"EXISTING PRODUCT: {stock_quantity}")
+                if int(new_sale["product_quantity"]) > int(stock_quantity):
+                    print(f"Sorry, you do not have enough {new_sale['product_name']} to sell.\n")
+                    success = False
+                    message = f"WARNING: you do not have enough {new_sale['product_name']} to sell."
+                    return render_template("message.html", message=message, balance=str(balance), user=user)
+                else:
+                    print("SELLING")
+                    existing_product = warehouse[idx]
+                    existing_product.product_quantity = int(stock_quantity) - int(new_sale["product_quantity"])
+                    existing_product.product_price = existing_product.product_price
+                    total_price = (existing_product.product_price * int(new_sale["product_quantity"])) * 1.5
+                    print(f"IDX: {idx}")
+                    db.session.commit()
+                    new_balance = balance + total_price
+                    update_balance(1, new_balance)
+                    success = True
+                    message = f"Successfully sold '{new_sale['product_quantity']}' items of '{new_sale['product_name']}'"
+                    return render_template("message.html", message=message, balance=str(balance), user=user)
+
             else:
+                product_quantity = int(new_sale["product_quantity"])
+                if product_quantity > warehouse["product_name"]["product_quantity"]:
+                    print(f"Sorry, you do not have enough {new_sale['product_name']} to sell.\n")
+                    success = False
+                    return data
+                v_price = warehouse["product_name"]["product_price"]
+                total_price = v_price * product_quantity
+                # data = self.add_transaction(user, data, "sale", v_price, s_name, product_quantity)
+                success = True
+
                 success = manager.f_sale(new_sale)
 
             if not success:
                 # flash(f"Sorry no more '{new_sale['s_name']}' available!")
-                message = f"WARNING: No more '{new_sale['s_name']}' available!"
-                return render_template("message.html", message=message, balance=balance, user=user)
+                message = f"WARNING: No more '{new_sale['product_name']}' available!"
+                return render_template("message.html", message=message, balance=str(balance), user=user)
 
             else:
                 # flash(f"Successfully sold '{new_sale['s_quantity']}' items of '{new_sale['s_name']}'")
-                message = f"Successfully sold '{new_sale['s_quantity']}' items of '{new_sale['s_name']}'"
-                return render_template("message.html", message=message, balance=balance, user=user)
+                message = f"Successfully sold '{new_sale['product_quantity']}' items of '{new_sale['product_name']}'"
+                return render_template("message.html", message=message, balance=str(balance), user=user)
 
         return redirect(url_for("index"))
 
