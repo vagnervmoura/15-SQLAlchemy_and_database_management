@@ -206,6 +206,8 @@ def sale():
                     existing_product.product_quantity = int(stock_quantity) - int(new_sale["product_quantity"])
                     existing_product.product_price = existing_product.product_price
                     total_price = (existing_product.product_price * int(new_sale["product_quantity"])) * 1.5
+                    if int(stock_quantity) == int(new_sale["product_quantity"]):
+                        db.session.delete(warehouse[idx])
                     print(f"IDX: {idx}")
                     db.session.commit()
                     new_balance = balance + total_price
