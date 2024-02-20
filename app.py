@@ -87,6 +87,7 @@ def purchase():
     data = manager.load_data()
     # balance = data["v_balance"]
     balance = load_balance()
+    stock = load_stock()
     warehouse = db.session.query(Warehoue).all()
     print(f"WAREHOUSE: {warehouse}")
     user = system.getlogin()
@@ -94,7 +95,6 @@ def purchase():
         form_values = request.form
         new_purchase = {
             "user": user,
-            # "product_id": id(),
             "v_name": str(form_values["v_name"]),
             "v_quantity": int(form_values["v_quantity"]),
             "v_price": float(form_values["v_price"]),
@@ -105,19 +105,6 @@ def purchase():
         v_quantity = new_purchase["v_quantity"]
         v_price = new_purchase["v_price"]
         total_price = v_price * v_quantity
-
-        idx = 0
-        stock = {"idx": [], "product_name": [], "product_price": [], "product_quantity": []}
-        for product in warehouse:
-            product_name = warehouse[idx].product_name
-            product_price = warehouse[idx].product_price
-            product_quantity = warehouse[idx].product_quantity
-
-            stock['idx'].append(idx)
-            stock['product_name'].append(product_name)
-            stock['product_price'].append(product_price)
-            stock['product_quantity'].append(product_quantity)
-            idx += 1
 
         if total_price > balance:
             print(f"Sorry, you do not have a balance enough to make this purchase.\n"
@@ -162,9 +149,10 @@ def sale():
     data = manager.load_data()
     # balance = data["v_balance"]
     balance = load_balance()
+    stock = load_stock()
     warehouse = db.session.query(Warehoue).all()
     print(f"WAREHOUSE: {warehouse}")
-    stock = data["v_warehouse"]
+    # stock = data["v_warehouse"]
 
     if request.method == "POST":
         print(request.form["s_name"])
@@ -178,18 +166,6 @@ def sale():
             }
             print(new_sale["product_name"])
 
-            idx = 0
-            stock = {"idx": [], "product_name": [], "product_price": [], "product_quantity": []}
-            for product in warehouse:
-                product_name = warehouse[idx].product_name
-                product_price = warehouse[idx].product_price
-                product_quantity = warehouse[idx].product_quantity
-
-                stock['idx'].append(idx)
-                stock['product_name'].append(product_name)
-                stock['product_price'].append(product_price)
-                stock['product_quantity'].append(product_quantity)
-                idx += 1
 
             if new_sale["product_name"] in stock['product_name']:
                 idx = stock['product_name'].index(new_sale["product_name"])
@@ -224,18 +200,15 @@ def sale():
                     return data
                 v_price = warehouse["product_name"]["product_price"]
                 total_price = v_price * product_quantity
-                # data = self.add_transaction(user, data, "sale", v_price, s_name, product_quantity)
                 success = True
 
                 success = manager.f_sale(new_sale)
 
             if not success:
-                # flash(f"Sorry no more '{new_sale['s_name']}' available!")
                 message = f"WARNING: No more '{new_sale['product_name']}' available!"
                 return render_template("message.html", message=message, balance=str(balance), user=user)
 
             else:
-                # flash(f"Successfully sold '{new_sale['s_quantity']}' items of '{new_sale['s_name']}'")
                 message = f"Successfully sold '{new_sale['product_quantity']}' items of '{new_sale['product_name']}'"
                 return render_template("message.html", message=message, balance=str(balance), user=user)
 
@@ -363,3 +336,20 @@ def update_balance(id, balance):
         # Handle exceptions
         print(f"Error updating balance: {str(e)}")
         db.session.rollback()  # Rollback changes in case of an error
+
+
+def load_stock():
+    warehouse = db.session.query(Warehoue).all()
+    idx = 0
+    stock = {"idx": [], "product_name": [], "product_price": [], "product_quantity": []}
+    for product in warehouse:
+        product_name = warehouse[idx].product_name
+        product_price = warehouse[idx].product_price
+        product_quantity = warehouse[idx].product_quantity
+
+        stock['idx'].append(idx)
+        stock['product_name'].append(product_name)
+        stock['product_price'].append(product_price)
+        stock['product_quantity'].append(product_quantity)
+        idx += 1
+    return stock

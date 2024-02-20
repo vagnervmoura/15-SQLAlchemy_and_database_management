@@ -16,7 +16,7 @@
                 <tbody>
                     {% for idx in range(stock['idx']|length) %}
                         <tr>
-                            <td>{{ stock.product_name[idx] }}</td>
+                            <td>{{ stock.product_name[idx].capitalize() }}</td>
                             <td>{{ stock.product_price[idx] }}</td>
                             <td>{{ stock.product_quantity[idx] }}</td>
                             <td>
