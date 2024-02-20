@@ -230,19 +230,19 @@ class Manager:
 #    @log_transaction
 #    @validate_quantity
 #    @validate_price
-    def f_purchase(self, new_data, *args, **kwargs):
+    def f_purchase(self, new_purchase, *args, **kwargs):
         config_obj = Config()
         config_obj.create_files()
         manager = Manager(config_obj)
         data = Manager.load_data(self)
         actual_balance = data.get("v_balance", 0)
-        user = new_data["user"]
+        user = new_purchase["user"]
         #if actual_balance <= 0:
         #    print("\nYour account is empty, and you cannot make any purchases.")
         #    return data
         #
         #app.purchase()
-        data = self.add_transaction(user, data, "purchase", new_data["v_price"], new_data["v_name"], new_data["v_quantity"])
+        data = self.add_transaction(user, data, "purchase", new_purchase["v_price"], new_purchase["v_name"], new_purchase["v_quantity"])
         #except ValueError:
         #    print("Sorry, you did not input a valid value.\n")
         print(data)

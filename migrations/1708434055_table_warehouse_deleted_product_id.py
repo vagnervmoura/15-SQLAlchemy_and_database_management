@@ -1,8 +1,8 @@
-"""Upgrade_DB_from_txt_on_index
+"""Table_Warehouse_deleted_product-id
 
-Revision ID: 1708280819
+Revision ID: 1708434055
 Revises: 
-Create Date: 2024-02-18 18:26:59.051532
+Create Date: 2024-02-20 13:00:55.702985
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '1708280819'
+revision: str = '1708434055'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = ('default',)
 depends_on: Union[str, Sequence[str], None] = None
@@ -26,11 +26,10 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('warehoue',
-    sa.Column('product_id', sa.Integer(), nullable=False),
     sa.Column('product_name', sa.String(), nullable=False),
     sa.Column('product_price', sa.Float(), nullable=False),
     sa.Column('product_quantity', sa.Integer(), nullable=False),
-    sa.PrimaryKeyConstraint('product_id')
+    sa.PrimaryKeyConstraint('product_name')
     )
     # ### end Alembic commands ###
 

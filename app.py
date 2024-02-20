@@ -12,7 +12,6 @@ from flask import render_template
 from flask import request
 from flask import redirect
 from flask import url_for
-from flask import flash
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from flask_alembic import Alembic
@@ -28,9 +27,7 @@ warehouse = Manager(name="warehouse_file")
 config_obj = Config()
 config_obj.create_files()
 manager = Manager(config_obj)
-
 data = manager.load_data()
-
 new_data = {}
 
 app = Flask(__name__)
@@ -40,16 +37,9 @@ app.config["SECRET_KEY"] = "mySecretKey"
 # CREATING NEW DBs:
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///db.sqlite"
 
-# class Base(DeclarativeBase):
-#   pass
-#
-# db_balance = SQLAlchemy(app, model_class=Base)
-#db.init_app(app)
-
 
 db = SQLAlchemy()
 db.init_app(app)
-
 
 alembic = Alembic()
 alembic.init_app(app, db)
@@ -61,8 +51,8 @@ class Balance(db.Model):
 
 
 class Warehoue(db.Model):
-    product_id = db.Column(db.Integer, primary_key=True)
-    product_name = db.Column(db.String, nullable=False)
+    # product_id = db.Column(db.Integer, primary_key=True)
+    product_name = db.Column(db.String, primary_key=True)
     product_price = db.Column(db.Float, nullable=False)
     product_quantity = db.Column(db.Integer, nullable=False)
 
@@ -71,14 +61,14 @@ class Warehoue(db.Model):
 def index():
     data = manager.load_data()
     balance = load_balance()
-    products = db.session.query(Warehoue).all()
+    warehouse = db.session.query(Warehoue).all()
     stock = {"idx": [], "product_name": [], "product_price": [], "product_quantity": []}
     idx = 0
 
-    for product in products:
-        product_name = products[idx].product_name
-        product_price = products[idx].product_price
-        product_quantity = products[idx].product_quantity
+    for product in warehouse:
+        product_name = warehouse[idx].product_name
+        product_price = warehouse[idx].product_price
+        product_quantity = warehouse[idx].product_quantity
 
         stock['idx'].append(idx)
         stock['product_name'].append(product_name)
@@ -95,22 +85,39 @@ def index():
 @app.route("/purchase/", methods=["POST", "GET"])
 def purchase():
     data = manager.load_data()
-    balance = data["v_balance"]
+    # balance = data["v_balance"]
+    balance = load_balance()
+    warehouse = db.session.query(Warehoue).all()
+    print(f"WAREHOUSE: {warehouse}")
     user = system.getlogin()
     if request.method == "POST":
         form_values = request.form
-        new_data = {
+        new_purchase = {
             "user": user,
+            # "product_id": id(),
             "v_name": str(form_values["v_name"]),
             "v_quantity": int(form_values["v_quantity"]),
             "v_price": float(form_values["v_price"]),
         }
 
         user = user
-        v_name = new_data["v_name"]
-        v_quantity = new_data["v_quantity"]
-        v_price = new_data["v_price"]
+        v_name = new_purchase["v_name"].lower()
+        v_quantity = new_purchase["v_quantity"]
+        v_price = new_purchase["v_price"]
         total_price = v_price * v_quantity
+
+        idx = 0
+        stock = {"idx": [], "product_name": [], "product_price": [], "product_quantity": []}
+        for product in warehouse:
+            product_name = warehouse[idx].product_name
+            product_price = warehouse[idx].product_price
+            product_quantity = warehouse[idx].product_quantity
+
+            stock['idx'].append(idx)
+            stock['product_name'].append(product_name)
+            stock['product_price'].append(product_price)
+            stock['product_quantity'].append(product_quantity)
+            idx += 1
 
         if total_price > balance:
             print(f"Sorry, you do not have a balance enough to make this purchase.\n"
@@ -118,9 +125,31 @@ def purchase():
             message = f"WARNING: Balance is not enough  enough to make this purchase."
             return render_template("message.html", message=message, balance=str(balance), user=user)
         else:
-            manager.f_purchase(new_data)
-            message = f"Purchased '{v_quantity}' '{v_name}'."
-            return render_template("message.html", message=message, balance=str(balance), user=user)
+            print("+" * 300)
+            print("+" * 300)
+            print(f"NEW_PURCHASE - V_NAME: {new_purchase['v_name']}")
+            print(f"STOCK - PRODUCT_NAME: {stock['product_name']}")
+            print(f"STOCK: {stock}")
+            id = Warehoue.query.get(new_purchase["v_name"])
+            print(f"ID: {id}")
+            if new_purchase["v_name"] in stock['product_name']:
+                idx = stock['product_name'].index(new_purchase["v_name"])
+                existing_product = warehouse[idx]
+
+                existing_product.product_quantity += new_purchase["v_quantity"]
+                existing_product.product_price = new_purchase["v_price"]
+                db.session.commit()
+
+            else:
+                print("INTO ELSE")
+                new_purchase = (Warehoue(product_name=v_name, product_price=v_price, product_quantity=v_quantity))
+                db.session.add(new_purchase)
+                db.session.commit()
+
+
+            # manager.f_purchase(new_purchase)
+            # message = f"Purchased '{v_quantity}' '{v_name}'."
+            # return render_template("message.html", message=message, balance=str(balance), user=user)
 
     return render_template("purchase.html", title="PURCHASE", balance=str(balance), user=user)
 
@@ -201,7 +230,8 @@ def history():
     user = system.getlogin()
     data = manager.load_data()
     history = data.get("v_review", [])
-    balance = data.get("v_balance", 0)
+    # balance = data.get("v_balance", 0)
+    balance = load_balance()
 
     new_history = {"date_transaction": [], "user": [], "transaction": [], "v_value": []}
 
