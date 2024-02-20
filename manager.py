@@ -5,6 +5,9 @@ from datetime import datetime
 
 import app
 from config import Config
+#from app import Balance
+#from app import db
+from sqlalchemy import update
 #from app import purchase
 from flask import Flask
 from flask import render_template
@@ -12,6 +15,11 @@ from flask import request
 from flask import redirect
 from flask import url_for
 from flask import flash
+from flask_sqlalchemy import SQLAlchemy
+from flask_alembic import Alembic
+
+db = SQLAlchemy()
+#balance = db.session.query(Balance).all()
 
 
 class Manager:
@@ -103,17 +111,17 @@ class Manager:
         save_file(self.warehouse_file, data["v_warehouse"])
         save_file(self.review_file, data["v_review"])
 
-    def add_transaction(self, user, data, transaction_type, value, product_name="", quantity=0):
+    def add_transaction(self, user, data, transaction_type, value, balance, product_name="", quantity=0):
         user = user
         review = data.get("v_review", [])
         date_transaction = datetime.now().strftime('%Y/%m/%d %H:%M:%S')
 
         if transaction_type == "balance":
-            data["v_balance"] += value
+            # balance += str(value)
             transaction_desc = f"Added to account"
 
         elif transaction_type == "withdraw":
-            data["v_balance"] -= value
+            # balance -= str(value)
             transaction_desc = f"Withdraw from account"
 
         elif transaction_type == "sale":
@@ -137,11 +145,17 @@ class Manager:
             print(transaction_desc)
             value = total_price
 
-
+        # print(f"DATA VALUE in DB: {data['v_balance']}")
+        # for new_balance in db.session:
+        #     #db.session.delete()
+        #     db.session.add(data['v_balance'])
+        #     db.session.commit()
         review.append(f"{date_transaction};{user};{transaction_desc};{value}")
         data["v_review"] = review
+
+        print(f"ADD_TRANSACTION BEFORE SEND TO F_BALANCE: {balance}")
         Manager.save_data(self, data)
-        return data
+        return data # , balance
 
 
 #    @log_transaction
@@ -150,23 +164,29 @@ class Manager:
         config_obj.create_files()
         manager = Manager(config_obj)
         data = Manager.load_data(self)
-        actual_balance = data.get("v_balance", 0)
-        v_action = new_balance["v_action"]
-        v_value = new_balance["v_value"]
+        balance = new_balance["balance"] #data.get("v_balance", 0)
+        action = new_balance["action"]
+        value = new_balance["value"]
         user = new_balance["user"]
+        print(f"MANAGER - NEW BALANCE: {balance}")
         try:
             #v_action = int(input("Press '1' to Add or press '2' to Subtract: "))
-            if v_action not in {1, 2}:
-                print(f"Sorry {v_action} is not a valid option.\n")
+            if action not in {1, 2}:
+                print(f"Sorry {action} is not a valid option.\n")
             else:
                 #v_value = float(input("Insert the amount to your balance: "))
-                transaction_type = "balance" if v_action == 1 else "withdraw"
-                data = self.add_transaction(user, data, transaction_type, v_value)
+                transaction_type = "balance" if action == 1 else "withdraw"
+                print(f"F_BALANCE BEFORE SEND ADD_TRANSACTION: {balance}")
+                print(f"F_BALANCE BEFORE SEND ADD_TRANSACTION: {value}")
+                balance = float(balance)
+                balance = balance + value
+                data = self.add_transaction(user, data, transaction_type, value, balance)
+                print(f"F_BALANCE AFTER SEND ADD_TRANSACTION: {balance}")
 
         except ValueError:
             print("Sorry, you did not input a valid value.\n")
-
-        return data
+        print(f"BALANCE in f_BALANCE BEFORE SEND TO APP: {balance}")
+        return data #, balance
 
 
 #    @log_transaction

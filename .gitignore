@@ -3,3 +3,6 @@ review.txt
 warehouse.txt
 .idea
 __pycache__
+ORIGINAL_instance
+db_balance.sqlite
+instance

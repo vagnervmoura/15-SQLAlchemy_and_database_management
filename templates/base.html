@@ -105,7 +105,15 @@
                 </ul>
                 <span class="navbar-text"><span>
                         <div class="container-fluid text-left">User: {{ user }}</div>
-                    <div class="container-fluid text-left">Current account: € {{ balance }}</div>
+<!--                        {% for balance in balance %}-->
+<!--                            balance = balance-->
+<!--                        {% endfor %}-->
+                        {% if balance == [] %}
+                            <div class="container-fluid text-left">Current account: € 0.00</div>
+                        {% else %}
+                            <div class="container-fluid text-left">Current account: € {{ balance }}</div>
+                        {% endif %}
+
                 </span>
             </div>
         </nav>

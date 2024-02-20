@@ -70,7 +70,7 @@ class Warehoue(db.Model):
 @app.route("/")
 def index():
     data = manager.load_data()
-    balance = db.session.query(Balance).all()
+    balance = load_balance()
     products = db.session.query(Warehoue).all()
     stock = {"idx": [], "product_name": [], "product_price": [], "product_quantity": []}
     idx = 0
@@ -86,20 +86,10 @@ def index():
         stock['product_quantity'].append(product_quantity)
         idx += 1
 
-
-    # with app.app_context():
-    #     balance = db_balance.create_all()
-    #
-    # db_balance.session.add(DB_Balance(v_balance=1))
-    # db.session.commit()
-
-    # actual_balance = db_balance.session.execute(db_balance.select(DB_Balance)).scalars()
-    # print(f"++++++++++++++++++++++BALANCE: {DB_Balance.query}")
-
     # Get the Username logged on system.
     user = system.getlogin()
 
-    return render_template("index.html", title="Current stock level:", stock=stock, balance=balance, user=user) #, actual_balance=actual_balance)
+    return render_template("index.html", title="Current stock level:", stock=stock, balance=str(balance), user=user) #, actual_balance=actual_balance)
 
 
 @app.route("/purchase/", methods=["POST", "GET"])
@@ -126,13 +116,13 @@ def purchase():
             print(f"Sorry, you do not have a balance enough to make this purchase.\n"
                   f"Your actual balance is {balance}.")
             message = f"WARNING: Balance is not enough  enough to make this purchase."
-            return render_template("message.html", message=message, balance=balance, user=user)
+            return render_template("message.html", message=message, balance=str(balance), user=user)
         else:
             manager.f_purchase(new_data)
             message = f"Purchased '{v_quantity}' '{v_name}'."
-            return render_template("message.html", message=message, balance=balance, user=user)
+            return render_template("message.html", message=message, balance=str(balance), user=user)
 
-    return render_template("purchase.html", title="PURCHASE", balance=balance, user=user)
+    return render_template("purchase.html", title="PURCHASE", balance=str(balance), user=user)
 
 @app.route("/sale/", methods=["POST", "GET"])
 def sale():
@@ -172,28 +162,37 @@ def sale():
 def balance():
     user = system.getlogin()
     data = manager.load_data()
-    balance = data["v_balance"]
+    balance = load_balance()
+
     if request.method == "POST":
         form_values = request.form
         new_balance = {
             "user": user,
-            "v_value": float(form_values["v_value"]),
-            "v_action": int(form_values["v_action"]),
+            "value": float(form_values["value"]),
+            "action": int(form_values["action"]),
+            "balance": balance,
         }
 
-        if new_balance["v_action"] == 2 and new_balance["v_value"] > balance:
+        if new_balance["action"] == 2 and new_balance["value"] > new_balance["balance"]:
             message = f"WARNING: Your balance is too low. Maximum amount you can withdraw is: {balance}."
-            return render_template("message.html", message=message, balance=balance, user=user)
+            return render_template("message.html", message=message, balance=str(balance), user=user)
         else:
+            if new_balance["action"] == 2:
+                new_balance["value"] -= new_balance["value"]*2
+
+            balance = float(balance) + float(new_balance['value'])
             manager.f_balance(new_balance)
-            if new_balance["v_action"] == 2:
+            if new_balance["action"] == 2:
                 msg = "Withdraw"
             else:
                 msg = "Added"
-            message = f"{msg} '{new_balance['v_value']}' successfully."
-            return render_template("message.html", message=message, balance=balance, user=user)
+            message = f"{msg} '{new_balance['value']}' successfully."
 
-    return render_template("balance.html", title="BALANCE", balance=balance, user=user)
+            balance = update_balance("1", balance)
+
+            return render_template("message.html", message=message, balance=str(balance), user=user)
+        return redirect(url_for("index"))
+    return render_template("balance.html", title="BALANCE", balance=str(balance), user=user)
 
 
 @app.route("/history/", defaults={"line_from": None, "line_to": None})
@@ -244,4 +243,38 @@ def history():
 
         new_history=filtered_data
 
-    return render_template("history.html", title="HISTORY", history=history, balance=balance, new_history=new_history, user=user)
+    return render_template("history.html", title="HISTORY", history=history, balance=str(balance), new_history=new_history, user=user)
+
+
+def load_balance():
+    if not db.session.query(Balance).first():
+        update_balance(1, 0)
+
+    balance = db.session.query(Balance.balance).first()
+    balance = balance.balance
+    return balance
+
+def update_balance(id, balance):
+    try:
+        # Try to retrieve the balance entry from the database
+        balance_ID = Balance.query.get(id)
+        print(f"ID: {id}")
+        print(f"BALANCE: {balance}")
+        print(f"BALANCE_ENTRY: {balance_ID}")
+
+        if balance_ID:
+            # If the entry exists, update its balance
+            print(f"INTO IF - BALANCE ID: {balance_ID}")
+            balance_ID.balance = balance
+        else:
+            # If the entry does not exist, create a new one
+            print(f"INTO ELSE - BALANCE ID: {balance_ID}")
+            balance_ID = Balance(id=id, balance=balance)
+            db.session.add(balance_ID)
+
+        # Commit changes to the database
+        db.session.commit()
+    except Exception as e:
+        # Handle exceptions
+        print(f"Error updating balance: {str(e)}")
+        db.session.rollback()  # Rollback changes in case of an error
