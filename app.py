@@ -135,7 +135,6 @@ def purchase():
             if new_purchase["v_name"] in stock['product_name']:
                 idx = stock['product_name'].index(new_purchase["v_name"])
                 existing_product = warehouse[idx]
-
                 existing_product.product_quantity += new_purchase["v_quantity"]
                 existing_product.product_price = new_purchase["v_price"]
                 db.session.commit()
@@ -145,6 +144,9 @@ def purchase():
                 new_purchase = (Warehoue(product_name=v_name, product_price=v_price, product_quantity=v_quantity))
                 db.session.add(new_purchase)
                 db.session.commit()
+
+            new_balance = balance - total_price
+            update_balance(1, new_balance)
 
 
             # manager.f_purchase(new_purchase)
