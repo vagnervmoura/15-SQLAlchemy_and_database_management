@@ -57,6 +57,16 @@ class Warehoue(db.Model):
     product_quantity = db.Column(db.Integer, nullable=False)
 
 
+# {"date_transaction": [], "user": [], "transaction": [], "v_value": []}
+class History(db.Model):
+    # date_transaction = db.Column(db.Date, primary_key=True)
+    date_transaction = db.Column(db.DateTime, default = datetime.now, primary_key=True)
+    user = db.Column(db.String, nullable=False)
+    transaction = db.Column(db.String, nullable=False)
+    value = db.Column(db.Float, nullable=False)
+
+
+
 @app.route("/")
 def index():
     data = manager.load_data()
@@ -135,6 +145,14 @@ def purchase():
             new_balance = balance - total_price
             update_balance(1, new_balance)
 
+            transaction = f"Purchased '{v_quantity}' units of '{v_name}': unit price '{v_price}'"
+            value = total_price
+
+            if transaction:
+                transaction = transaction
+                value = value
+                update_history(transaction, value)
+
 
             # manager.f_purchase(new_purchase)
             # message = f"Purchased '{v_quantity}' '{v_name}'."
@@ -177,19 +195,28 @@ def sale():
                     message = f"WARNING: you do not have enough {new_sale['product_name']} to sell."
                     return render_template("message.html", message=message, balance=str(balance), user=user)
                 else:
-                    print("SELLING")
                     existing_product = warehouse[idx]
                     existing_product.product_quantity = int(stock_quantity) - int(new_sale["product_quantity"])
                     existing_product.product_price = existing_product.product_price
+                    product_price = existing_product.product_price
                     total_price = (existing_product.product_price * int(new_sale["product_quantity"])) * 1.5
                     if int(stock_quantity) == int(new_sale["product_quantity"]):
                         db.session.delete(warehouse[idx])
-                    print(f"IDX: {idx}")
+
                     db.session.commit()
                     new_balance = balance + total_price
                     update_balance(1, new_balance)
                     success = True
                     message = f"Successfully sold '{new_sale['product_quantity']}' items of '{new_sale['product_name']}'"
+
+
+                    transaction = f"Sold '{new_sale['product_quantity']}' units of '{new_sale['product_name']}': unit price '{product_price}'"
+                    value = total_price
+                    if transaction:
+                        transaction = transaction
+                        value = value
+                        update_history(transaction, value)
+
                     return render_template("message.html", message=message, balance=str(balance), user=user)
 
             else:
@@ -229,6 +256,7 @@ def balance():
             "action": int(form_values["action"]),
             "balance": balance,
         }
+        value = float(new_balance["value"])
 
         if new_balance["action"] == 2 and new_balance["value"] > new_balance["balance"]:
             message = f"WARNING: Your balance is too low. Maximum amount you can withdraw is: {balance}."
@@ -241,15 +269,24 @@ def balance():
             manager.f_balance(new_balance)
             if new_balance["action"] == 2:
                 msg = "Withdraw"
+                transaction = "Withdraw from account"
+
             else:
                 msg = "Added"
+                transaction = "Added to account"
+
             message = f"{msg} '{new_balance['value']}' successfully."
 
             balance = update_balance("1", balance)
 
-            return render_template("message.html", message=message, balance=str(balance), user=user)
+        if transaction:
+            transaction = transaction
+            value = value
+            update_history(transaction, value)
+
+            return render_template("message.html", message=message, balance=str(balance), user=user)#, history=new_history)
         return redirect(url_for("index"))
-    return render_template("balance.html", title="BALANCE", balance=str(balance), user=user)
+    return render_template("balance.html", title="BALANCE", balance=str(balance), user=user)#, history=history)
 
 
 @app.route("/history/", defaults={"line_from": None, "line_to": None})
@@ -257,11 +294,12 @@ def balance():
 def history():
     user = system.getlogin()
     data = manager.load_data()
-    history = data.get("v_review", [])
+    # history = data.get("v_review", [])
+    history = load_history()
     # balance = data.get("v_balance", 0)
     balance = load_balance()
 
-    new_history = {"date_transaction": [], "user": [], "transaction": [], "v_value": []}
+    new_history = {"date_transaction": [], "user": [], "transaction": [], "value": []}
 
     if request.method == "POST":
         form_values = request.form
@@ -353,3 +391,35 @@ def load_stock():
         stock['product_quantity'].append(product_quantity)
         idx += 1
     return stock
+
+
+def load_history():
+    history = db.session.query(History).all()
+    idx = 0
+    review = {"idx": [], "date_transaction": [], "user": [], "transaction": [], "value": []}
+    for row in history:
+        date_transaction = history[idx].date_transaction
+        user = history[idx].user
+        transaction = history[idx].transaction
+        value = history[idx].value
+
+        review['idx'].append(idx)
+        review['date_transaction'].append(date_transaction)
+        review['user'].append(user)
+        review['transaction'].append(transaction)
+        review['value'].append(value)
+        idx += 1
+    return review
+
+
+def update_history(transaction, value):
+    load_history()
+    user = system.getlogin()
+    print(load_history)
+    add_history = (History(
+        user=user,
+        transaction=transaction,
+        value=value
+    ))
+    db.session.add(add_history)
+    db.session.commit()
