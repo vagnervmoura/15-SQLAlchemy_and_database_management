@@ -9,4 +9,5 @@ BACK_UP
 instance
 config.py
 instance
+instance/db.sqlite
 manager.py

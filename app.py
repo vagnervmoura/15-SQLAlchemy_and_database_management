@@ -113,16 +113,16 @@ def purchase():
                 existing_product = warehouse[idx]
                 existing_product.product_quantity += new_purchase["v_quantity"]
                 existing_product.product_price = new_purchase["v_price"]
-                db.session.commit()
 
             else:
                 print("INTO ELSE")
                 new_purchase = (Warehoue(product_name=v_name, product_price=v_price, product_quantity=v_quantity))
                 db.session.add(new_purchase)
-                db.session.commit()
 
             new_balance = balance - total_price
             update_balance(1, new_balance)
+            db.session.commit()
+
 
             transaction = f'Purchased "{v_quantity}" units of "{v_name}": unit price "{v_price}"'
             value = total_price
@@ -130,6 +130,11 @@ def purchase():
                 transaction = transaction
                 value = value
                 update_history(transaction, value)
+
+                message = f"Successfully purchased '{new_purchase['v_quantity']}' items of '{new_purchase['v_name']}'"
+                return render_template("message.html", message=message, balance=str(balance), user=user)
+
+
 
             return redirect(url_for("index"))
 
@@ -321,11 +326,9 @@ def update_balance(id, balance):
 
         if balance_ID:
             # If the entry exists, update its balance
-            print(f"INTO IF - BALANCE ID: {balance_ID}")
             balance_ID.balance = balance
         else:
             # If the entry does not exist, create a new one
-            print(f"INTO ELSE - BALANCE ID: {balance_ID}")
             balance_ID = Balance(id=id, balance=balance)
             db.session.add(balance_ID)
 
