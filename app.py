@@ -16,18 +16,9 @@ from flask import make_response
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from flask_alembic import Alembic
-from manager import Manager
-from config import Config
 from datetime import datetime
 import os as system
 
-
-warehouse = Manager(name="warehouse_file")
-
-config_obj = Config()
-config_obj.create_files()
-manager = Manager(config_obj)
-data = manager.load_data()
 new_data = {}
 
 app = Flask(__name__)
@@ -65,7 +56,6 @@ class History(db.Model):
 
 @app.route("/")
 def index():
-    data = manager.load_data()
     balance = load_balance()
     warehouse = db.session.query(Warehoue).all()
     stock = {"idx": [], "product_name": [], "product_price": [], "product_quantity": []}
@@ -90,7 +80,6 @@ def index():
 
 @app.route("/purchase/", methods=["POST", "GET"])
 def purchase():
-    data = manager.load_data()
     balance = load_balance()
     stock = load_stock()
     warehouse = db.session.query(Warehoue).all()
@@ -150,7 +139,6 @@ def purchase():
 def sale():
     user = system.getlogin()
     success = False
-    data = manager.load_data()
     balance = load_balance()
     stock = load_stock()
     warehouse = db.session.query(Warehoue).all()
@@ -179,7 +167,7 @@ def sale():
                     existing_product.product_quantity = int(stock_quantity) - int(new_sale["product_quantity"])
                     existing_product.product_price = existing_product.product_price
                     product_price = existing_product.product_price
-                    total_price = (existing_product.product_price * int(new_sale["product_quantity"])) * 1.5
+                    total_price = (existing_product.product_price * int(new_sale["product_quantity"])) # * 1.5
                     if int(stock_quantity) == int(new_sale["product_quantity"]):
                         db.session.delete(warehouse[idx])
 
@@ -203,12 +191,10 @@ def sale():
                 if product_quantity > warehouse["product_name"]["product_quantity"]:
                     print(f"Sorry, you do not have enough {new_sale['product_name']} to sell.\n")
                     success = False
-                    return data
+
                 v_price = warehouse["product_name"]["product_price"]
                 total_price = v_price * product_quantity
                 success = True
-
-                success = manager.f_sale(new_sale)
 
             if not success:
                 message = f"WARNING: No more '{new_sale['product_name']}' available!"
@@ -224,7 +210,6 @@ def sale():
 @app.route("/balance/", methods=["POST", "GET"])
 def balance():
     user = system.getlogin()
-    data = manager.load_data()
     balance = load_balance()
 
     if request.method == "POST":
@@ -243,16 +228,13 @@ def balance():
         else:
             if new_balance["action"] == 2:
                 new_balance["value"] -= new_balance["value"]*2
-
-            balance = float(balance) + float(new_balance['value'])
-            manager.f_balance(new_balance)
-            if new_balance["action"] == 2:
                 msg = "Withdraw"
                 transaction = "Withdraw from account"
-
             else:
                 msg = "Added"
                 transaction = "Added to account"
+
+            balance = float(balance) + float(new_balance['value'])
 
             message = f"{msg} '{new_balance['value']}' successfully."
 
@@ -272,7 +254,6 @@ def balance():
 @app.route("/history/", methods=["POST", "GET"])
 def history():
     user = system.getlogin()
-    data = manager.load_data()
     history = load_history()
     balance = load_balance()
 

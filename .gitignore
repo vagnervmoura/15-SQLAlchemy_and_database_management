@@ -5,3 +5,8 @@ warehouse.txt
 __pycache__
 ORIGINAL_instance
 db_balance.sqlite
+BACK_UP
+instance
+config.py
+instance
+manager.py
