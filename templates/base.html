@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html xmlns="http://www.vignoto.com" lang="en">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>Vignoto - Account and Management System</title>
@@ -11,7 +12,7 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.min.js"></script>
     <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-
+    <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet" type="text/css">
 
 	<style type="text/css">
         body{
@@ -59,6 +60,8 @@
           z-index: 99;
           display: none;
         }
+
+
 	</style>
 
 
@@ -85,16 +88,16 @@
 <!-- *** MENU START *** -->
     <div class="container">
         <nav class="navbar navbar-expand-lg bg-black bg-body-black navbar-dark border-bottom fixed-top" data-bs-theme="dark" id="sideNav">
-            <a class="navbar-brand js-scroll-trigger" href="/"><span class="material-symbols-outlined">home</span>
+            <a class="navbar-brand js-scroll-trigger" href="/"><span class="material-symbols-outlined">home</span><p></p><br><br>
                 <div class="hide-desktop container-md"></div>
             </a>
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <div class="collapse navbar-collapse airwolf-header" id="navbarSupportedContent">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item">
-                        <a class="nav-link js-scroll-trigger" href="{{ url_for('purchase') }}">Purchase</a>
+                        <a class="nav-link js-scroll-trigger" href="{{ url_for('purchase') }}">Purchase</a><p></p><br>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link js-scroll-trigger" href="{{ url_for('history') }}">History</a>
@@ -103,20 +106,41 @@
                         <a class="nav-link js-scroll-trigger" href="{{ url_for('balance') }}">Balance</a>
                     </li>
                 </ul>
+
+
+<!--                <div class="airwolf-header">-->
+                    <span class="airwolf-header-timeline-left one"></span>
+                    <span class="airwolf-header-timeline-left two"></span>
+                    <span class="airwolf-header-timeline-left three"></span>
+                    <span class="airwolf-header-timeline-left four"></span>
+                    <span class="airwolf-header-timeline-left five"></span>
+                    <span class="airwolf-header-timeline-left six"></span>
+                    <span class="airwolf-header-stripe-fade one"></span>
+                    <span class="airwolf-header-stripe-fade two"></span>
+                    <span class="airwolf-header-stripe-fade three"></span>
+                    <span class="airwolf-header-stripe-fade four"></span>
+                    <span class="airwolf-header-stripe-fade five"></span>
+                    <span class="airwolf-header-title" style="font-weight:normal;"><strong>Account and Management System</strong></span>
+                    <span class="airwolf-header-subtitle"></span>
+<!--                </div>-->
+
+
                 <span class="navbar-text"><span>
-                        <div class="container-fluid text-left">User: {{ user }}</div>
+                        <div class="container-fluid text-left">User: {{ user }}</div><p></p>
 <!--                        {% for balance in balance %}-->
 <!--                            balance = balance-->
 <!--                        {% endfor %}-->
                         {% if balance == [] %}
-                            <div class="container-fluid text-left">Current account: € 0.00</div>
+                            <div class="container-fluid text-left">Account: € 0.00</div>
                         {% else %}
-                            <div class="container-fluid text-left">Current account: € {{ balance }}</div>
+                            <div class="container-fluid text-left">Account: € {{ balance }}</div>
                         {% endif %}
+
 
                 </span>
             </div>
         </nav>
+        <br><br><br><br><br><br><br><br>
     </div>
 
 <!-- *** MENU END *** -->

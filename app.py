@@ -12,6 +12,7 @@ from flask import render_template
 from flask import request
 from flask import redirect
 from flask import url_for
+from flask import make_response
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from flask_alembic import Alembic
@@ -21,7 +22,6 @@ from datetime import datetime
 import os as system
 
 
-# db = Manager
 warehouse = Manager(name="warehouse_file")
 
 config_obj = Config()
@@ -37,7 +37,6 @@ app.config["SECRET_KEY"] = "mySecretKey"
 # CREATING NEW DBs:
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///db.sqlite"
 
-
 db = SQLAlchemy()
 db.init_app(app)
 
@@ -51,15 +50,12 @@ class Balance(db.Model):
 
 
 class Warehoue(db.Model):
-    # product_id = db.Column(db.Integer, primary_key=True)
     product_name = db.Column(db.String, primary_key=True)
     product_price = db.Column(db.Float, nullable=False)
     product_quantity = db.Column(db.Integer, nullable=False)
 
 
-# {"date_transaction": [], "user": [], "transaction": [], "v_value": []}
 class History(db.Model):
-    # date_transaction = db.Column(db.Date, primary_key=True)
     date_transaction = db.Column(db.DateTime, default = datetime.now, primary_key=True)
     user = db.Column(db.String, nullable=False)
     transaction = db.Column(db.String, nullable=False)
@@ -89,17 +85,16 @@ def index():
     # Get the Username logged on system.
     user = system.getlogin()
 
-    return render_template("index.html", title="Current stock level:", stock=stock, balance=str(balance), user=user) #, actual_balance=actual_balance)
+    return render_template("index.html", title="Current stock level:", stock=stock, balance=str(balance), user=user)
 
 
 @app.route("/purchase/", methods=["POST", "GET"])
 def purchase():
     data = manager.load_data()
-    # balance = data["v_balance"]
     balance = load_balance()
     stock = load_stock()
     warehouse = db.session.query(Warehoue).all()
-    print(f"WAREHOUSE: {warehouse}")
+
     user = system.getlogin()
     if request.method == "POST":
         form_values = request.form
@@ -122,11 +117,6 @@ def purchase():
             message = f"WARNING: Balance is not enough  enough to make this purchase."
             return render_template("message.html", message=message, balance=str(balance), user=user)
         else:
-            print("+" * 300)
-            print("+" * 300)
-            print(f"NEW_PURCHASE - V_NAME: {new_purchase['v_name']}")
-            print(f"STOCK - PRODUCT_NAME: {stock['product_name']}")
-            print(f"STOCK: {stock}")
             id = Warehoue.query.get(new_purchase["v_name"])
             print(f"ID: {id}")
             if new_purchase["v_name"] in stock['product_name']:
@@ -145,18 +135,14 @@ def purchase():
             new_balance = balance - total_price
             update_balance(1, new_balance)
 
-            transaction = f"Purchased '{v_quantity}' units of '{v_name}': unit price '{v_price}'"
+            transaction = f'Purchased "{v_quantity}" units of "{v_name}": unit price "{v_price}"'
             value = total_price
-
             if transaction:
                 transaction = transaction
                 value = value
                 update_history(transaction, value)
 
-
-            # manager.f_purchase(new_purchase)
-            # message = f"Purchased '{v_quantity}' '{v_name}'."
-            # return render_template("message.html", message=message, balance=str(balance), user=user)
+            return redirect(url_for("index"))
 
     return render_template("purchase.html", title="PURCHASE", balance=str(balance), user=user)
 
@@ -165,30 +151,24 @@ def sale():
     user = system.getlogin()
     success = False
     data = manager.load_data()
-    # balance = data["v_balance"]
     balance = load_balance()
     stock = load_stock()
     warehouse = db.session.query(Warehoue).all()
-    print(f"WAREHOUSE: {warehouse}")
-    # stock = data["v_warehouse"]
 
     if request.method == "POST":
         print(request.form["s_name"])
 
         if request.form.get("s_name"):
-            print("INTO IF")
             new_sale = {
                 "user": user,
                 "product_name": request.form["s_name"],
                 "product_quantity": request.form["s_quantity"]
             }
-            print(new_sale["product_name"])
-
 
             if new_sale["product_name"] in stock['product_name']:
                 idx = stock['product_name'].index(new_sale["product_name"])
                 stock_quantity = warehouse[idx].product_quantity
-                print(f"EXISTING PRODUCT: {stock_quantity}")
+
                 if int(new_sale["product_quantity"]) > int(stock_quantity):
                     print(f"Sorry, you do not have enough {new_sale['product_name']} to sell.\n")
                     success = False
@@ -209,8 +189,7 @@ def sale():
                     success = True
                     message = f"Successfully sold '{new_sale['product_quantity']}' items of '{new_sale['product_name']}'"
 
-
-                    transaction = f"Sold '{new_sale['product_quantity']}' units of '{new_sale['product_name']}': unit price '{product_price}'"
+                    transaction = f'Sold "{new_sale["product_quantity"]}" units of "{new_sale["product_name"]}": unit price "{product_price}"'
                     value = total_price
                     if transaction:
                         transaction = transaction
@@ -294,9 +273,7 @@ def balance():
 def history():
     user = system.getlogin()
     data = manager.load_data()
-    # history = data.get("v_review", [])
     history = load_history()
-    # balance = data.get("v_balance", 0)
     balance = load_balance()
 
     new_history = {"date_transaction": [], "user": [], "transaction": [], "value": []}
@@ -318,26 +295,29 @@ def history():
             line_to = new_data["line_to"].replace('-','/')
         line_to = line_to + ' 23:59:59'
 
-        new_history = manager.f_review(history)
+        print(f"DATE FROM: {line_from}")
+        print(f"DATE TO: {line_to}")
+        if history:
+            print(f"NEW HISTORY: {history}")
 
         if line_from is "" and line_to is "":
-            filtered_history = new_history
+            filtered_history = history
 
         else:
             index = 0
-
-            filtered_data = {'date_transaction': [], 'user': [], 'transaction': [], 'v_value': []}
-            for valor in new_history['date_transaction']:
+            filtered_data = {'date_transaction': [], 'user': [], 'transaction': [], 'value': []}
+            for valor in history['date_transaction']:
                 index += 1
                 if line_from <= valor <= line_to:
-                    if valor in new_history['date_transaction']:
-                        index = new_history['date_transaction'].index(valor)
-                        filtered_data['date_transaction'].append(new_history['date_transaction'][index])
-                        filtered_data['user'].append(new_history['user'][index])
-                        filtered_data['transaction'].append(new_history['transaction'][index])
-                        filtered_data['v_value'].append(new_history['v_value'][index])
+                    if valor in history['date_transaction']:
+                        index = history['date_transaction'].index(valor)
+                        filtered_data['date_transaction'].append(history['date_transaction'][index])
+                        filtered_data['user'].append(history['user'][index])
+                        filtered_data['transaction'].append(history['transaction'][index])
+                        filtered_data['value'].append(history['value'][index])
 
         new_history=filtered_data
+        print(f"NEW HISTORY FILTERED: {new_history}")
 
     return render_template("history.html", title="HISTORY", history=history, balance=str(balance), new_history=new_history, user=user)
 
@@ -394,22 +374,22 @@ def load_stock():
 
 
 def load_history():
-    history = db.session.query(History).all()
+    review = db.session.query(History).all()
     idx = 0
-    review = {"idx": [], "date_transaction": [], "user": [], "transaction": [], "value": []}
-    for row in history:
-        date_transaction = history[idx].date_transaction
-        user = history[idx].user
-        transaction = history[idx].transaction
-        value = history[idx].value
+    history = {"idx": [], "date_transaction": [], "user": [], "transaction": [], "value": []}
+    for row in review:
+        date_transaction = review[idx].date_transaction.strftime('%Y/%m/%d %H:%M:%S')
+        user = review[idx].user
+        transaction = review[idx].transaction
+        value = review[idx].value
 
-        review['idx'].append(idx)
-        review['date_transaction'].append(date_transaction)
-        review['user'].append(user)
-        review['transaction'].append(transaction)
-        review['value'].append(value)
+        history['idx'].append(idx)
+        history['date_transaction'].append(date_transaction)
+        history['user'].append(user)
+        history['transaction'].append(transaction)
+        history['value'].append(value)
         idx += 1
-    return review
+    return history
 
 
 def update_history(transaction, value):
